@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Chopsticks AI:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Chopsticks_AI_jar</output-path>
+    <root id="archive" name="Chopsticks AI.jar">
+      <element id="module-output" name="Chopsticks AI" />
+    </root>
+  </artifact>
+</component>
