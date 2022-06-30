@@ -61,25 +61,31 @@ public class Game {
 
     }
 
+    // Updates the hands array to simulate a split or send.
     public void send(boolean playerTurn, int hand, int amountToSend){
 
-        // TODO: there has to be some better way to do this.
+        // If the sending hand is the first hand, the receiving hand must be the second and vice versa.
         int sendingTo = hand == 0? 1 : 0;
+
+        // If the AI is splitting or sending, add 2 to both hand variables to match the offset of the hands array..
         if(!playerTurn)
         {
             hand += 2;
             sendingTo += 2;
         }
 
+        // Remove the amount sent from the sending hand and give it to the receiving hand.
         hands[hand] -= amountToSend;
         hands[sendingTo] += amountToSend;
 
-        if (hands[sendingTo] >= 5) hands[sendingTo] = 0;
-//        if (hands[sendingTo] >= 5)  hands[sendingTo] = (byte) (hands[sendingTo] % 5);
-
+        // In case the receiving hand has accumulated 5 or more fingers from the action, limit as per game-rule.
+        hands[sendingTo] = this.limitToGameRule(hands[sendingTo]);
 
     }
 
+    // Processes numbers greater than or equal to 5.
+    // If overflow is enabled, numbers will wrap around if they do not equal exactly 5.
+    // If overflow is not enabled, then hands will be eliminated as soon as they have 5 or more fingers.
     private byte limitToGameRule (int fingers) {
 
         // If the amount of fingers is less than 5, there is no reason to do anything.
@@ -92,11 +98,12 @@ public class Game {
 
     }
 
+    // Prints the game in a way the user can work with.
     public void print(){
 
         System.out.println(
                 "P2:\t" + "|".repeat(hands[2]) + (hands[2] == 4? "  " : "\t  ") + "|".repeat(hands[3]) + "\n" +
-                        "P1:\t" + "|".repeat(hands[0]) + (hands[0] == 4? "  " : "\t  ") + "|".repeat(hands[1])
+                "P1:\t" + "|".repeat(hands[0]) + (hands[0] == 4? "  " : "\t  ") + "|".repeat(hands[1])
         );
 
     }
