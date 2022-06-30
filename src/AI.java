@@ -3,14 +3,26 @@ import java.util.Scanner;
 
 public class AI extends Game {
 
+    /* This class contains all the methods used to start and play a game of chopsticks against an AI. */
+
+    // ------------------------------------------- //
+    // Instance variables.
+
+    // Constants for coloring text.
     private final String RED = "\u001b[31m";
     private final String GREEN = "\u001b[32m";
     private final String RESET = "\u001b[0m";
 
+    // Used for getting player choices from the user.
     private final Scanner SCANNER = new Scanner(System.in);
 
-
+    // Determines the max amount of turns foreseen by the minimax method.
+    // It seems 12 is the sweet-spot, as any higher value slows down computation and any less is unnecessarily quick.
     public int maxDepth = 12;
+
+
+    // ------------------------------------------- //
+    // Constructors.
 
     public AI () {
 
@@ -23,97 +35,122 @@ public class AI extends Game {
 
     }
 
-    public int[/*enemy hand, player hand*/] getBestMove () {
 
-        // Special case:
-        // If you only have one hand, do not attack one with 3 unless you have to.
-        if(super.hands[2] + super.hands[3] == 1)
-        {
-            if(super.hands[0] == 3 && super.hands[1] != 3 && super.hands[1] != 0)
-                return new int[]{super.hands[2] == 1? 0 : 1, 1};
-            if(super.hands[1] == 3 && super.hands[0] != 3 && super.hands[0] != 0)
-                return new int[]{super.hands[2] == 1? 0 : 1, 0};
-        }
+    // ------------------------------------------- //
+    // Decision making methods.
 
-        int max = Integer.MIN_VALUE;
-        int maxHand = 0;
-        int maxToAttack = 0;
+    // Attempts to retrieve the move most likely to lead to victory for the current state of the game.
+    private int[/*enemy hand, player hand*/] getBestMove () {
 
-//        System.out.println("AI is thinking.");
+        int[/*max, maxHand, MaxToAttack*/] maximaArray = new int[]{
+                Integer.MIN_VALUE, 0, 0
+        };
 
-        for(int hand = 0; hand < 2; hand++)
+        System.out.print("AI is thinking.");
+
+
+        for(byte hand = 0; hand < 2; hand++)
         {
             byte fingers = super.hands[hand + 2];
 
             // Check attack possibilities.
-            for (int toAttack = 0; toAttack < 2; toAttack++)
-            {
-//                System.out.print(".");
-                if (fingers != 0 && super.hands[toAttack] != 0) {
-
-                    byte[] prevValue = Arrays.copyOf(hands, 4);
-
-                    // Place a coin at the current column and get that boards evaluation.
-                    // Un-place that coin after evaluating the board so not to damage the normal playing board.
-                    super.attack(false, hand, toAttack);
-                    int evaluation = minimax(
-                            false, maxDepth,
-                            Integer.MIN_VALUE,
-                            Integer.MAX_VALUE
-                    );
-                    System.arraycopy(prevValue, 0, hands, 0, 4);
-
-                    System.out.println("ai's " + (hand == 0? "first" : "second") + " to attack your " + (toAttack == 0? "first" : "second") + " hand: " + evaluation);
-
-
-                    if (evaluation > max || (evaluation == max && Math.random() > .5))
-                    {
-                        max = evaluation;
-                        maxHand = hand;
-                        maxToAttack = toAttack;
-                    }
-                }
-            }
+            updateMaxima_AttackComponent(maximaArray, hand, fingers);
 
             // Check split possibilities.
-            for(int toSplit = 1; toSplit <= fingers; toSplit++)
-                if(
-                        !(super.hands[hand + 2] - toSplit == super.hands[hand == 0? 3 : 2]
-                        && super.hands[hand == 0? 3 : 2] + toSplit == super.hands[hand + 2])
-                )
-                {
-//                    System.out.print(".");
-
-                    byte[] prevValue = Arrays.copyOf(hands, 4);
-
-                    // Place a coin at the current column and get that boards evaluation.
-                    // Un-place that coin after evaluating the board so not to damage the normal playing board.
-                    super.send(false, hand, toSplit);
-                    int evaluation = minimax(
-                            false, maxDepth,
-                            Integer.MIN_VALUE,
-                            Integer.MAX_VALUE
-                    );
-                    System.arraycopy(prevValue, 0, hands, 0, 4);
-
-                    System.out.println("ai's " + (hand == 0? "first" : "second") + " to send " + toSplit + " fingers to the other: " + evaluation);
-
-
-                    if (evaluation > max || (evaluation == max && Math.random() > .5))
-                    {
-                        max = evaluation;
-                        maxHand = hand;
-                        maxToAttack = -toSplit;
-                    }
-                }
+            updateMaxima_SendComponent(maximaArray, hand, fingers);
         }
         System.out.println();
 
-        return new int[]{maxHand, maxToAttack};
+        return new int[]{
+                maximaArray[1],
+                maximaArray[2]
+        };
 
     }
 
-    public int minimax (boolean aiTurn, int countDown, int alpha, int beta) {
+    // These two methods attempt to find the best attack and send moves.
+    private void updateMaxima_AttackComponent (int[] maximaArray, int hand, byte fingers) {
+
+        // For every hand that is available to attack, check the worth of each possible attack.
+        for (byte toAttack = 0; toAttack < 2; toAttack++)
+        {
+            System.out.print(".");
+            if (fingers != 0 && super.hands[toAttack] != 0) {
+
+                // Alter the board to simulate the attack, grab the evaluation, then fix any alterations.
+                byte last = super.hands[toAttack];
+                super.attack(false, hand, toAttack);
+                int evaluation = minimax(
+                        false, maxDepth,
+                        Integer.MIN_VALUE,
+                        Integer.MAX_VALUE
+                );
+                super.hands[toAttack] = last;
+
+                // If the evaluation score is better than anything seen before, replace all variables.
+                // If it is equivalent, give it a chance to appear as the best move for some variety.
+                if (evaluation > maximaArray[0] || (evaluation == maximaArray[0] && Math.random() > .5))
+                {
+                    maximaArray[0] = evaluation;
+                    maximaArray[1] = hand;
+                    maximaArray[2] = toAttack;
+                }
+            }
+        }
+
+    }
+    private void updateMaxima_SendComponent (int[] maximaArray, int hand, byte fingers) {
+
+        // Offset hand by its index in the hands array.
+        hand += 2;
+        // Store the index of the hand that wasn't passed for convenience.
+        int otherHand = hand == 2? 3 : 2;
+
+        // For each hand, check the worth of each valid send move.
+        for(byte toSplit = 1; toSplit <= fingers; toSplit++)
+        {
+            System.out.print(".");
+            if(
+                // This if statement checks whether a move is illegal or not.
+                // An illegal move is one that stalls and just reflects a players fingers.
+                // An example of this is having |||  || and sending a finger, so you are left with ||  |||.
+                    !( super.hands[otherHand] == super.hands[hand] - toSplit
+                    && super.hands[otherHand] + toSplit == super.hands[hand])
+            )
+            {
+
+                // Alter the board to simulate the send action, grab the evaluation, then fix any alterations.
+                byte lastSend = super.hands[hand];
+                byte lastReceive = super.hands[otherHand];
+                super.send(false, hand - 2, toSplit);
+                int evaluation = minimax(
+                        false, maxDepth,
+                        Integer.MIN_VALUE,
+                        Integer.MAX_VALUE
+                );
+                super.hands[hand] = lastSend;
+                super.hands[otherHand] = lastReceive;
+
+                // If the evaluation score is better than anything seen before, replace all variables.
+                // If it is equivalent, give it a chance to appear as the best move for some variety.
+                if (evaluation > maximaArray[0] || (evaluation == maximaArray[0] && Math.random() > .5))
+                {
+                    maximaArray[0] = evaluation;
+                    maximaArray[1] = hand - 2;
+                    maximaArray[2] = -toSplit;
+                }
+            }
+        }
+
+
+
+    }
+
+
+    // ------------------------------------------- //
+    // Lower level decision making methods.
+
+    private int minimax(boolean aiTurn, int countDown, int alpha, int beta) {
 
         // If the game ends in a terminal-state OR max recursive depth is reached, evaluate the board.
         if (super.gameOver() || countDown == 0) return this.evaluateBoard(!aiTurn, countDown);
@@ -123,31 +160,32 @@ public class AI extends Game {
         // Loop though every available column and update minMax accordingly to new evaluations.
         for(int hand = 0; hand < 2; hand++)
         {
+            int otherHand = hand == 0? 1 : 0;
+            if(aiTurn) otherHand += 2;
+
             byte fingers = super.hands[hand + (aiTurn? 2 : 0)];
             if (fingers != 0) {
                 // Check attack possibilities.
                 for (int toAttack = 0; toAttack < 2; toAttack++) {
                     if (super.hands[toAttack + (aiTurn ? 0 : 2)] != 0) {
-                        byte[] prevValue = Arrays.copyOf(hands, 4);
 
-                        // Place a coin at the current column and get that boards evaluation.
-                        // Un-place that coin after evaluating the board so not to damage the normal playing board.
+                        byte last = super.hands[toAttack + (aiTurn ? 0 : 2)];
                         super.attack(!aiTurn, hand, toAttack);
                         int evaluation = minimax(
                                 !aiTurn,
                                 countDown - 1,
                                 alpha, beta
                         );
-                        System.arraycopy(prevValue, 0, hands, 0, 4);
+                        super.hands[toAttack + (aiTurn ? 0 : 2)] = last;
 
                         // Update minMax depending on whether it's the minimizing or maximizing turn.
-                        minMax = aiTurn ?
+                        minMax = aiTurn?
                                 Math.max(minMax, evaluation) :
-                                Math.min(minMax, evaluation);
+                                Math.min(minMax, evaluation) ;
 
                         // Alpha-Beta pruning.
-                        // If we know there's already a better option somewhere in the tree, there is no reason to take this one.
-                        // This lets us avoid many unnecessary calculations.
+                        // If we know there's already a better option somewhere in the tree, there
+                        // is no reason to take this one. This lets us avoid many unnecessary calculations.
                         if (aiTurn) alpha = Math.max(alpha, evaluation);
                         else beta = Math.min(beta, evaluation);
                         if (beta <= alpha) break;
@@ -157,14 +195,12 @@ public class AI extends Game {
                 // Check split possibilities.
                 for(int toSplit = 1; toSplit <= fingers; toSplit++)
                     if(
-                            !(super.hands[hand + 2] - toSplit == super.hands[hand == 0? 3 : 2]
-                            && super.hands[hand == 0? 3 : 2] + toSplit == super.hands[hand + 2])
+                            !( super.hands[hand + (aiTurn ? 2 : 0)] - toSplit == super.hands[otherHand]
+                            && super.hands[otherHand] + toSplit == super.hands[hand + (aiTurn ? 2 : 0)])
                     )
                     {
                         byte[] prevValue = Arrays.copyOf(hands, 4);
 
-                        // Place a coin at the current column and get that boards evaluation.
-                        // Un-place that coin after evaluating the board so not to damage the normal playing board.
                         super.send(!aiTurn, hand, toSplit);
                         int evaluation = minimax(
                                 !aiTurn,
@@ -174,9 +210,9 @@ public class AI extends Game {
                         System.arraycopy(prevValue, 0, hands, 0, 4);
 
                         // Update minMax depending on whether it's the minimizing or maximizing turn.
-                        minMax = aiTurn ?
+                        minMax = aiTurn?
                                 Math.max(minMax, evaluation) :
-                                Math.min(minMax, evaluation);
+                                Math.min(minMax, evaluation) ;
 
                         // Alpha-Beta pruning.
                         // If we know there's already a better option somewhere in the tree, there is no reason to take this one.
@@ -192,7 +228,10 @@ public class AI extends Game {
 
     }
 
-    public int evaluateBoard(boolean aiTurn, int recursiveDepth) {
+    // Determines the AI's priorities.
+    // This method determines what futures the AI deems worth striving for, and altering this
+    // has the single greatest affect to the AI's game strategy and behavior as a whole.
+    private int evaluateBoard (boolean aiTurn, int recursiveDepth) {
 
         int score = -recursiveDepth;
         if (aiTurn)
@@ -205,10 +244,6 @@ public class AI extends Game {
 
             if (hands[0] == 3 || hands[1] == 3) score -= 10;
             if (hands[2] == 3 || hands[3] == 3) score += 10;
-
-
-//            score +=  10 * (hands[0] + hands[1]);
-//            score += -10 * (hands[2] + hands[3]);
         }
         else
         {
@@ -220,14 +255,15 @@ public class AI extends Game {
 
             if (hands[0] == 3 || hands[1] == 3) score += 10;
             if (hands[2] == 3 || hands[3] == 3) score -= 10;
-
-//            score += -10 * (hands[0] + hands[1]);
-//            score +=  10 * (hands[2] + hands[3]);
         }
         return aiTurn? score : -score;
 
 
     }
+
+
+    // ------------------------------------------- //
+    // Game-loop methods.
 
     public void gameLoop () {
 
@@ -335,7 +371,7 @@ public class AI extends Game {
 
     }
 
-    private int prompt1or2(){
+    private int prompt1or2 () {
 
         int n = this.promptInt();
         while(n < 1 || n > 2)
@@ -346,7 +382,7 @@ public class AI extends Game {
         return n;
 
     }
-    private int promptInt(){
+    private int promptInt () {
 
         int n = -1;
         while(n <= 0)

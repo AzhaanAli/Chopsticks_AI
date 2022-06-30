@@ -40,14 +40,14 @@ public class Game {
     // Methods.
 
     // Returns whether a game has been won or not.
-    public boolean gameOver(){
+    public boolean gameOver() {
 
         return (hands[0] == 0 && hands[1] == 0) || (hands[2] == 0 && hands[3] == 0);
 
     }
 
     // Updates the hands array to simulate an attack.
-    public void attack(boolean playerTurn, int hand, int toAttack){
+    public void attack(boolean playerTurn, int hand, int toAttack) {
 
         // Add 2 to the index of the AI's hand, as it is offset by 2 in the hands array.
         if(playerTurn) toAttack += 2;
@@ -86,7 +86,7 @@ public class Game {
     // Processes numbers greater than or equal to 5.
     // If overflow is enabled, numbers will wrap around if they do not equal exactly 5.
     // If overflow is not enabled, then hands will be eliminated as soon as they have 5 or more fingers.
-    private byte limitToGameRule (int fingers) {
+    private byte limitToGameRule(int fingers) {
 
         // If the amount of fingers is less than 5, there is no reason to do anything.
         if (fingers >= 5)
@@ -99,7 +99,7 @@ public class Game {
     }
 
     // Prints the game in a way the user can work with.
-    public void print(){
+    public void print() {
 
         System.out.println(
                 "P2:\t" + "|".repeat(hands[2]) + (hands[2] == 4? "  " : "\t  ") + "|".repeat(hands[3]) + "\n" +
