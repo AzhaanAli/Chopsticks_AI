@@ -18,7 +18,7 @@ public class AI extends Game {
 
     // Determines the max amount of turns foreseen by the minimax method.
     // It seems 12 is the sweet-spot, as any higher value slows down computation and any less is unnecessarily quick.
-    public int maxDepth = 12;
+    public int maxDepth = 14;
 
 
     // ------------------------------------------- //
@@ -58,6 +58,7 @@ public class AI extends Game {
 
             // Check split possibilities.
             updateMaxima_SendComponent(maximaArray, hand, fingers);
+
         }
         System.out.println();
 
@@ -171,7 +172,7 @@ public class AI extends Game {
 
                         byte last = super.hands[toAttack + (aiTurn ? 0 : 2)];
                         super.attack(!aiTurn, hand, toAttack);
-                        int evaluation = minimax(
+                        int loss = minimax(
                                 !aiTurn,
                                 countDown - 1,
                                 alpha, beta
@@ -180,14 +181,14 @@ public class AI extends Game {
 
                         // Update minMax depending on whether it's the minimizing or maximizing turn.
                         minMax = aiTurn?
-                                Math.max(minMax, evaluation) :
-                                Math.min(minMax, evaluation) ;
+                                Math.max(minMax, loss) :
+                                Math.min(minMax, loss) ;
 
                         // Alpha-Beta pruning.
                         // If we know there's already a better option somewhere in the tree, there
                         // is no reason to take this one. This lets us avoid many unnecessary calculations.
-                        if (aiTurn) alpha = Math.max(alpha, evaluation);
-                        else beta = Math.min(beta, evaluation);
+                        if (aiTurn) alpha = Math.max(alpha, loss);
+                        else beta = Math.min(beta, loss);
                         if (beta <= alpha) break;
                     }
                 }
@@ -202,7 +203,7 @@ public class AI extends Game {
                         byte[] prevValue = Arrays.copyOf(hands, 4);
 
                         super.send(!aiTurn, hand, toSplit);
-                        int evaluation = minimax(
+                        int loss = minimax(
                                 !aiTurn,
                                 countDown - 1,
                                 alpha, beta
@@ -211,14 +212,14 @@ public class AI extends Game {
 
                         // Update minMax depending on whether it's the minimizing or maximizing turn.
                         minMax = aiTurn?
-                                Math.max(minMax, evaluation) :
-                                Math.min(minMax, evaluation) ;
+                                Math.max(minMax, loss):
+                                Math.min(minMax, loss);
 
                         // Alpha-Beta pruning.
                         // If we know there's already a better option somewhere in the tree, there is no reason to take this one.
                         // This lets us avoid many unnecessary calculations.
-                        if (aiTurn) alpha = Math.max(alpha, evaluation);
-                        else beta = Math.min(beta, evaluation);
+                        if (aiTurn) alpha = Math.max(alpha, loss);
+                        else beta = Math.min(beta, loss);
                         if (beta <= alpha) break;
                     }
             }
@@ -233,7 +234,7 @@ public class AI extends Game {
     // has the single greatest effect on the AI's game strategy and behavior as a whole.
     private int evaluateBoard (boolean aiTurn, int recursiveDepth) {
 
-        int score = recursiveDepth;
+        int score = maxDepth - recursiveDepth;
         if (aiTurn) score *= -1;
 
         if (hands[0] == 0 && hands[1] == 0) score += 100;
