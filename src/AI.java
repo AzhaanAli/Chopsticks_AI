@@ -230,33 +230,22 @@ public class AI extends Game {
 
     // Determines the AI's priorities.
     // This method determines what futures the AI deems worth striving for, and altering this
-    // has the single greatest affect to the AI's game strategy and behavior as a whole.
+    // has the single greatest effect on the AI's game strategy and behavior as a whole.
     private int evaluateBoard (boolean aiTurn, int recursiveDepth) {
 
-        int score = -recursiveDepth;
-        if (aiTurn)
-        {
-            if (hands[0] == 0 && hands[1] == 0) score += 100;
-            if (hands[2] == 0 && hands[3] == 0) score -= 100;
+        int score = recursiveDepth;
+        if (aiTurn) score *= -1;
 
-            if (hands[0] == 0 || hands[1] == 0) score += 20;
-            if (hands[2] == 0 || hands[3] == 0) score -= 20;
+        if (hands[0] == 0 && hands[1] == 0) score += 100;
+        if (hands[2] == 0 && hands[3] == 0) score -= 100;
 
-            if (hands[0] == 3 || hands[1] == 3) score -= 10;
-            if (hands[2] == 3 || hands[3] == 3) score += 10;
-        }
-        else
-        {
-            if (hands[0] == 0 && hands[1] == 0) score -= 100;
-            if (hands[2] == 0 && hands[3] == 0) score += 100;
+        if (hands[0] == 0 || hands[1] == 0) score += 20;
+        if (hands[2] == 0 || hands[3] == 0) score -= 20;
 
-            if (hands[0] == 0 || hands[1] == 0) score -= 20;
-            if (hands[2] == 0 || hands[3] == 0) score += 20;
+        if (hands[0] == 3 || hands[1] == 3) score -= 10;
+        if (hands[2] == 3 || hands[3] == 3) score += 10;
 
-            if (hands[0] == 3 || hands[1] == 3) score += 10;
-            if (hands[2] == 3 || hands[3] == 3) score -= 10;
-        }
-        return aiTurn? score : -score;
+        return score;
 
 
     }

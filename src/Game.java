@@ -8,7 +8,7 @@ public class Game {
     // Determines the rule-set of the game.
     // If overflow is off, hands will die as soon as their fingers exceed 4.
     // If overflow is on, hands will die once their fingers equal exactly 5, while any additional damage wraps around.
-    private boolean overflowRules;
+    private final boolean overflowRules;
 
     // This array encodes the information of all players hands and their respective finger counts.
     // I decided to use a byte array rather than an integer array because no hand will ever have more than 4 fingers.
